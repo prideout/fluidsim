@@ -1,7 +1,5 @@
-CC=gcc
-CPP=g++
-CFLAGS=-std=c99 -Wc++-compat -Wall -c -O3
-CCFLAGS=-c -O3
+CC=g++
+CFLAGS=-Wall -c -O3
 LIBS=-lX11 -lGL -lpng
 
 MAINCPP=Fluid3d.o Utility.o
@@ -12,13 +10,13 @@ run: Fluid
 	./Fluid
 
 Fluid: $(MAINCPP) $(CSHARED) $(SHADERS)
-	$(CPP) $(MAINCPP) $(CSHARED) -o Fluid $(LIBS)
+	$(CC) $(MAINCPP) $(CSHARED) -o Fluid $(LIBS)
 
 .c.o:
 	$(CC) $(CFLAGS) $< -o $@
 
 .cpp.o:
-	$(CPP) $(CCFLAGS) $< -o $@
+	$(CC) $(CFLAGS) $< -o $@
 
 clean:
 	rm -rf *.o Fluid

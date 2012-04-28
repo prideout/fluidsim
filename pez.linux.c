@@ -239,7 +239,7 @@ int main(int argc, char** argv)
         
         PezUpdate((float) deltaTime / 1000000.0f);
 
-        PezRender(0);
+        PezRender();
         glXSwapBuffers(context.MainDisplay, context.MainWindow);
     }
 

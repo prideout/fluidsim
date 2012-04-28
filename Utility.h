@@ -56,8 +56,6 @@ void ApplyImpulse(SurfacePod dest, vmath::Vector3 position, float value);
 void ApplyBuoyancy(SurfacePod velocity, SurfacePod temperature, SurfacePod density, SurfacePod dest);
 void WriteToFile(const char* filename, SurfacePod density);
 void ReadFromFile(const char* filename, SurfacePod density);
-TexturePod OverlayText(std::string message);
-void ExportScreenshot(const char* filename);
 
 extern const float CellSize;
 extern const int ViewportWidth;

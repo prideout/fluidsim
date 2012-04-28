@@ -39,13 +39,10 @@ static GLuint TextProgram;
 static GLuint BlurProgram;
 static float FieldOfView = 0.7f;
 static bool SimulateFluid = true;
-static bool ExportStill = true;
 static const float DefaultThetaX = 0;
 static const float DefaultThetaY = 0.75f;
 static float ThetaX = DefaultThetaX;
 static float ThetaY = DefaultThetaY;
-static bool ShowHud = true;
-static bool ExportMovie = false;
 static int ViewSamples = GridWidth*2;
 static int LightSamples = GridWidth;
 static float Fips = -4;
@@ -159,24 +156,6 @@ void PezRender()
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_3D, 0);
     glActiveTexture(GL_TEXTURE0);
-
-    // Draw the HUD:
-    if (ShowHud) {
-        char msg[256];
-        sprintf(msg, "%03.1f fps\n"
-            "Eulerian Grid: %d x %d x %d\n"
-            "Raycast Samples: %d View, %d Light\n"
-            "%s",
-            Fips,
-            GridWidth, GridHeight, GridDepth,
-            ViewSamples, LightSamples,
-            glGetString(GL_RENDERER));
-        TexturePod message = OverlayText(std::string(msg));
-        glUseProgram(TextProgram);
-        glBindTexture(GL_TEXTURE_2D, message.Handle);
-        glDrawArrays(GL_POINTS, 0, 1);
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
 }
 
 void PezUpdate(float seconds)
@@ -225,21 +204,6 @@ void PezUpdate(float seconds)
         }
         SubtractGradient(Slabs.Velocity.Ping, Slabs.Pressure.Ping, Surfaces.Obstacles, Slabs.Velocity.Pong);
         SwapSurfaces(&Slabs.Velocity);
-    }
-
-    if (ExportMovie) {
-        static int frame = 0;
-        char msg[256];
-        sprintf(msg, "../movie/%03d.png", frame++);
-        ExportScreenshot(msg);
-    }
-
-    if (ExportStill) {
-        static int frame = 0;
-        if (frame++ == 100) {
-            ExportScreenshot("../doc/Screenshot.png");
-            //exit(0);
-        }
     }
 }
 
