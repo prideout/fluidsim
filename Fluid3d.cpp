@@ -35,6 +35,11 @@ static struct {
     GLuint FullscreenQuad;
 } Vbos;
 
+static struct {
+    GLuint CubeCenter;
+    GLuint FullscreenQuad;
+} Vaos;
+
 static const Point3 EyePosition = Point3(0, 0, 2);
 static GLuint RaycastProgram;
 static GLuint LightProgram;
@@ -69,8 +74,18 @@ void PezInitialize()
     LightProgram = LoadProgram("Fluid.Vertex", "Fluid.PickLayer", "Light.Cache");
     BlurProgram = LoadProgram("Fluid.Vertex", "Fluid.PickLayer", "Light.Blur");
     TextProgram = LoadProgram("Text.VS", "Text.GS", "Text.FS");
+
+    glGenVertexArrays(1, &Vaos.CubeCenter);
+    glBindVertexArray(Vaos.CubeCenter);
     Vbos.CubeCenter = CreatePointVbo(0, 0, 0);
+    glVertexAttribPointer(SlotPosition, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+
+    glGenVertexArrays(1, &Vaos.FullscreenQuad);
+    glBindVertexArray(Vaos.FullscreenQuad);
     Vbos.FullscreenQuad = CreateQuadVbo();
+    glVertexAttribPointer(SlotPosition, 2, GL_SHORT, GL_FALSE, 2 * sizeof(short), 0);
+
+    glBindVertexArray(0);
 
     Slabs.Velocity = CreateSlab(GridWidth, GridHeight, GridDepth, 3);
     Slabs.Density = CreateSlab(GridWidth, GridHeight, GridDepth, 1);
@@ -106,8 +121,7 @@ void PezRender()
         glDisable(GL_BLEND);
         glBindFramebuffer(GL_FRAMEBUFFER, Surfaces.BlurredDensity.FboHandle);
         glViewport(0, 0, Slabs.Density.Ping.Width, Slabs.Density.Ping.Height);
-        glBindBuffer(GL_ARRAY_BUFFER, Vbos.FullscreenQuad);
-        glVertexAttribPointer(SlotPosition, 2, GL_SHORT, GL_FALSE, 2 * sizeof(short), 0);
+        glBindVertexArray(Vaos.FullscreenQuad);
         glBindTexture(GL_TEXTURE_3D, Slabs.Density.Ping.ColorTexture);
         glUseProgram(BlurProgram);
         SetUniform("DensityScale", 5.0f);
@@ -123,8 +137,7 @@ void PezRender()
         glDisable(GL_BLEND);
         glBindFramebuffer(GL_FRAMEBUFFER, Surfaces.LightCache.FboHandle);
         glViewport(0, 0, Surfaces.LightCache.Width, Surfaces.LightCache.Height);
-        glBindBuffer(GL_ARRAY_BUFFER, Vbos.FullscreenQuad);
-        glVertexAttribPointer(SlotPosition, 2, GL_SHORT, GL_FALSE, 2 * sizeof(short), 0);
+        glBindVertexArray(Vaos.FullscreenQuad);
         glBindTexture(GL_TEXTURE_3D, Surfaces.BlurredDensity.ColorTexture);
         glUseProgram(LightProgram);
         SetUniform("LightStep", sqrtf(2.0) / float(LightSamples));
@@ -140,8 +153,7 @@ void PezRender()
     //glClearColor(1, 1, 1, 1);
     glClear(GL_COLOR_BUFFER_BIT);
     glEnable(GL_BLEND);
-    glBindBuffer(GL_ARRAY_BUFFER, Vbos.CubeCenter);
-    glVertexAttribPointer(SlotPosition, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    glBindVertexArray(Vaos.CubeCenter);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_3D, Surfaces.BlurredDensity.ColorTexture);
     glActiveTexture(GL_TEXTURE1);
@@ -193,8 +205,7 @@ void PezUpdate(float seconds)
     else  Fips = fips * alpha + Fips * (1.0f - alpha);
 
     if (SimulateFluid) {
-        glBindBuffer(GL_ARRAY_BUFFER, Vbos.FullscreenQuad);
-        glVertexAttribPointer(SlotPosition, 2, GL_SHORT, GL_FALSE, 2 * sizeof(short), 0);
+        glBindVertexArray(Vaos.FullscreenQuad);
         glViewport(0, 0, GridWidth, GridHeight);
         Advect(Slabs.Velocity.Ping, Slabs.Velocity.Ping, Surfaces.Obstacles, Slabs.Velocity.Pong, VelocityDissipation);
         SwapSurfaces(&Slabs.Velocity);
