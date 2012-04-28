@@ -334,6 +334,7 @@ void Advect(SurfacePod velocity, SurfacePod source, SurfacePod obstacles, Surfac
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_3D, obstacles.ColorTexture);
     glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, dest.Depth);
+
     ResetState();
 }
 
@@ -431,7 +432,7 @@ void ApplyBuoyancy(SurfacePod velocity, SurfacePod temperature, SurfacePod densi
 
 GLuint CreatePointVbo(float x, float y, float z)
 {
-    float p[] = {x, y, z};
+    float p[3] = {x, y, z};
     GLuint vbo;
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
