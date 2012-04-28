@@ -229,17 +229,18 @@ void PezUpdate(float seconds)
 
 void PezHandleMouse(int x, int y, int action)
 {
+    static bool MouseDown = false;
     static int StartX, StartY;
     static const float Speed = 0.005f;
-    if (action & PEZ_DOWN) {
+    if (action == PEZ_DOWN) {
         StartX = x;
         StartY = y;
-    } else if (action & PEZ_MOVE) {
+        MouseDown = true;
+    } else if (MouseDown && action == PEZ_MOVE) {
         ThetaX = DefaultThetaX + Speed * (x - StartX);
         ThetaY = DefaultThetaY + Speed * (y - StartY);
-    } else if (action & PEZ_DOUBLECLICK) {
-        ThetaX = DefaultThetaX;
-        ThetaY = DefaultThetaY;
+    } else if (action == PEZ_UP) {
+        MouseDown = false;
     }
 }
 

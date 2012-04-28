@@ -187,7 +187,7 @@ int main(int argc, char** argv)
         if (glGetError() != GL_NO_ERROR)
             pezFatal("OpenGL error.\n");
 
-        if (XPending(context.MainDisplay)) {
+        while (XPending(context.MainDisplay)) {
             XEvent event;
     
             XNextEvent(context.MainDisplay, &event);
