@@ -1,7 +1,8 @@
 #include "Utility.h"
-#include <glsw.h>
+#include "pez.h"
 #include <string.h>
-#include <math.h>
+#include <cmath>
+#include <cstdio>
 
 using namespace vmath;
 
@@ -55,7 +56,7 @@ void CreateObstacles(SurfacePod dest)
 
         glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, dest.ColorTexture, 0, dest.Depth - 1 - slice);
         float z = dest.Depth / 2.0f;
-        z = abs(slice - z) / z;
+        z = std::abs(slice - z) / z;
         float fraction = 1 - sqrt(z);
         float radius = 0.5f * fraction;
 
@@ -113,30 +114,14 @@ void CreateObstacles(SurfacePod dest)
 
 GLuint LoadProgram(const char* vsKey, const char* gsKey, const char* fsKey)
 {
-    static int first = 1;
-    if (first) {
-        glswInit();
-        glswAddPath("../", ".glsl");
-        glswAddPath("./", ".glsl");
-
-        char qualifiedPath[128];
-        strcpy(qualifiedPath, PezResourcePath());
-        strcat(qualifiedPath, "/");
-        glswAddPath(qualifiedPath, ".glsl");
-
-        glswAddDirective("*", "#version 150");
-
-        first = 0;
-    }
-    
-    const char* vsSource = glswGetShader(vsKey);
-    const char* gsSource = glswGetShader(gsKey);
-    const char* fsSource = glswGetShader(fsKey);
+    const char* vsSource = pezGetShader(vsKey);
+    const char* gsSource = pezGetShader(gsKey);
+    const char* fsSource = pezGetShader(fsKey);
 
     const char* msg = "Can't find %s shader: '%s'.\n";
-    PezCheckCondition(vsSource != 0, msg, "vertex", vsKey);
-    PezCheckCondition(gsKey == 0 || gsSource != 0, msg, "geometry", gsKey);
-    PezCheckCondition(fsKey == 0 || fsSource != 0, msg, "fragment", fsKey);
+    pezCheck(vsSource != 0, msg, "vertex", vsKey);
+    pezCheck(gsKey == 0 || gsSource != 0, msg, "geometry", gsKey);
+    pezCheck(fsKey == 0 || fsSource != 0, msg, "fragment", fsKey);
     
     GLint compileSuccess;
     GLchar compilerSpew[256];
@@ -147,7 +132,7 @@ GLuint LoadProgram(const char* vsKey, const char* gsKey, const char* fsKey)
     glCompileShader(vsHandle);
     glGetShaderiv(vsHandle, GL_COMPILE_STATUS, &compileSuccess);
     glGetShaderInfoLog(vsHandle, sizeof(compilerSpew), 0, compilerSpew);
-    PezCheckCondition(compileSuccess, "Can't compile %s:\n%s", vsKey, compilerSpew);
+    pezCheck(compileSuccess, "Can't compile %s:\n%s", vsKey, compilerSpew);
     glAttachShader(programHandle, vsHandle);
 
     GLuint gsHandle;
@@ -157,7 +142,7 @@ GLuint LoadProgram(const char* vsKey, const char* gsKey, const char* fsKey)
         glCompileShader(gsHandle);
         glGetShaderiv(gsHandle, GL_COMPILE_STATUS, &compileSuccess);
         glGetShaderInfoLog(gsHandle, sizeof(compilerSpew), 0, compilerSpew);
-        PezCheckCondition(compileSuccess, "Can't compile %s:\n%s", gsKey, compilerSpew);
+        pezCheck(compileSuccess, "Can't compile %s:\n%s", gsKey, compilerSpew);
         glAttachShader(programHandle, gsHandle);
     }
     
@@ -168,7 +153,7 @@ GLuint LoadProgram(const char* vsKey, const char* gsKey, const char* fsKey)
         glCompileShader(fsHandle);
         glGetShaderiv(fsHandle, GL_COMPILE_STATUS, &compileSuccess);
         glGetShaderInfoLog(fsHandle, sizeof(compilerSpew), 0, compilerSpew);
-        PezCheckCondition(compileSuccess, "Can't compile %s:\n%s", fsKey, compilerSpew);
+        pezCheck(compileSuccess, "Can't compile %s:\n%s", fsKey, compilerSpew);
         glAttachShader(programHandle, fsHandle);
     }
 
@@ -181,11 +166,11 @@ GLuint LoadProgram(const char* vsKey, const char* gsKey, const char* fsKey)
     glGetProgramInfoLog(programHandle, sizeof(compilerSpew), 0, compilerSpew);
 
     if (!linkSuccess) {
-        PezDebugString("Link error.\n");
-        if (vsKey) PezDebugString("Vertex Shader: %s\n", vsKey);
-        if (gsKey) PezDebugString("Geometry Shader: %s\n", gsKey);
-        if (fsKey) PezDebugString("Fragment Shader: %s\n", fsKey);
-        PezDebugString("%s\n", compilerSpew);
+        pezPrintString("Link error.\n");
+        if (vsKey) pezPrintString("Vertex Shader: %s\n", vsKey);
+        if (gsKey) pezPrintString("Geometry Shader: %s\n", gsKey);
+        if (fsKey) pezPrintString("Fragment Shader: %s\n", fsKey);
+        pezPrintString("%s\n", compilerSpew);
     }
     
     return programHandle;
@@ -228,15 +213,15 @@ SurfacePod CreateSurface(GLsizei width, GLsizei height, int numComponents)
             break;
     }
 
-    PezCheckCondition(GL_NO_ERROR == glGetError(), "Unable to create normals texture");
+    pezCheck(GL_NO_ERROR == glGetError(), "Unable to create normals texture");
 
     GLuint colorbuffer;
     glGenRenderbuffers(1, &colorbuffer);
     glBindRenderbuffer(GL_RENDERBUFFER, colorbuffer);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureHandle, 0);
-    PezCheckCondition(GL_NO_ERROR == glGetError(), "Unable to attach color buffer");
+    pezCheck(GL_NO_ERROR == glGetError(), "Unable to attach color buffer");
     
-    PezCheckCondition(GL_FRAMEBUFFER_COMPLETE == glCheckFramebufferStatus(GL_FRAMEBUFFER), "Unable to create FBO.");
+    pezCheck(GL_FRAMEBUFFER_COMPLETE == glCheckFramebufferStatus(GL_FRAMEBUFFER), "Unable to create FBO.");
     SurfacePod surface = { fboHandle, textureHandle };
 
     glClearColor(0, 0, 0, 0);
@@ -278,15 +263,15 @@ SurfacePod CreateVolume(GLsizei width, GLsizei height, GLsizei depth, int numCom
             break;
     }
 
-    PezCheckCondition(GL_NO_ERROR == glGetError(), "Unable to create volume texture");
+    pezCheck(GL_NO_ERROR == glGetError(), "Unable to create volume texture");
 
     GLuint colorbuffer;
     glGenRenderbuffers(1, &colorbuffer);
     glBindRenderbuffer(GL_RENDERBUFFER, colorbuffer);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textureHandle, 0);
-    PezCheckCondition(GL_NO_ERROR == glGetError(), "Unable to attach color buffer");
+    pezCheck(GL_NO_ERROR == glGetError(), "Unable to attach color buffer");
 
-    PezCheckCondition(GL_FRAMEBUFFER_COMPLETE == glCheckFramebufferStatus(GL_FRAMEBUFFER), "Unable to create FBO.");
+    pezCheck(GL_FRAMEBUFFER_COMPLETE == glCheckFramebufferStatus(GL_FRAMEBUFFER), "Unable to create FBO.");
     SurfacePod surface = { fboHandle, textureHandle };
 
     glClearColor(0, 0, 0, 0);
@@ -546,7 +531,7 @@ void WriteToFile(const char* filename, SurfacePod density)
     glGetTexImage(GL_TEXTURE_3D, 0, GL_RED, GL_HALF_FLOAT, &cache[0]);
     FILE* voxelsFile = fopen(filename, "wb");
     size_t bytesWritten = fwrite(&cache[0], 1, requiredBytes, voxelsFile);
-    PezCheckCondition(bytesWritten == requiredBytes, "Unable to dump out volume texture.");
+    pezCheck(bytesWritten == requiredBytes, "Unable to dump out volume texture.");
 }
 
 void ReadFromFile(const char* filename, SurfacePod density)
@@ -555,7 +540,7 @@ void ReadFromFile(const char* filename, SurfacePod density)
     std::vector<unsigned char> cache(requiredBytes);
     FILE* voxelsFile = fopen(filename, "rb");
     size_t bytesRead = fread(&cache[0], 1, requiredBytes, voxelsFile);
-    PezCheckCondition(bytesRead == requiredBytes, "Unable to slurp up volume texture.");
+    pezCheck(bytesRead == requiredBytes, "Unable to slurp up volume texture.");
 
     glBindTexture(GL_TEXTURE_3D, density.ColorTexture);
     glTexImage3D(GL_TEXTURE_3D, 0, GL_R16F, density.Width, density.Height, density.Depth, 0, GL_RED, GL_HALF_FLOAT, &cache[0]);

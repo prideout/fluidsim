@@ -1,5 +1,6 @@
 #include "Utility.h"
 #include <cmath>
+#include <cstdio>
 
 using namespace vmath;
 using std::string;
@@ -178,11 +179,11 @@ void PezRender()
     }
 }
 
-void PezUpdate(unsigned int microseconds)
+void PezUpdate(float seconds)
 {
     PezConfig cfg = PezGetConfig();
 
-    float dt = microseconds * 0.000001f;
+    float dt = seconds * 0.001f;
     Vector3 up(1, 0, 0); Point3 target(0);
     Matrices.View = Matrix4::lookAt(EyePosition, target, up);
     Matrix4 modelMatrix = Matrix4::identity();

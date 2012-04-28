@@ -1,33 +1,24 @@
 CC=gcc
-CFLAGS=-std=c99 -Wall -c -Wc++-compat -O3 -fextended-identifiers
+CPP=g++
+CFLAGS=-std=c99 -Wc++-compat -Wall -c -O3
+CCFLAGS=-c -O3
 LIBS=-lX11 -lGL -lpng
-DEMOS=\
-	Spiral1 \
-	Spiral2 \
-	Spiral3 \
-	Spiral4 \
-	Spiral5 \
-	Spiral6 \
-	Spiral7a Spiral7b \
-	Spiral8a Spiral8b \
 
-SHARED=pez.o bstrlib.o pez.linux.o
-PREFIX=
+MAINCPP=Fluid3d.o Utility.o
+CSHARED=pez.o pez.linux.o bstrlib.o
+SHADERS=Fluid.glsl Raycast.glsl Light.glsl
 
-run: Spiral7b
-	./Spiral7b
+run: Fluid
+	./Fluid
 
-all: $(DEMOS)
-
-define DEMO_RULE
-$(1): $(PREFIX)$(1).o $(PREFIX)$(1).glsl $(SHARED)
-	$(CC) $(PREFIX)$(1).o $(SHARED) -o $(1) $(LIBS)
-endef
-
-$(foreach demo,$(DEMOS),$(eval $(call DEMO_RULE,$(demo))))
+Fluid: $(MAINCPP) $(CSHARED) $(SHADERS)
+	$(CPP) $(MAINCPP) $(CSHARED) -o Fluid $(LIBS)
 
 .c.o:
 	$(CC) $(CFLAGS) $< -o $@
 
+.cpp.o:
+	$(CPP) $(CCFLAGS) $< -o $@
+
 clean:
-	rm -rf *.o $(DEMOS)
+	rm -rf *.o Fluid

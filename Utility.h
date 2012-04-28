@@ -1,8 +1,9 @@
 #pragma once
 #include <vector>
-#include <vmath.hpp>
-#include <pez.h>
-#include <glew.h>
+#include <string>
+#include "vmath.hpp"
+#include "pez.h"
+#include "gl3.h"
 
 enum AttributeSlot {
     SlotPosition,

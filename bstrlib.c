@@ -1,687 +1,20 @@
-// glsw written by Philip Rideout
-// bstrlib written by Paul Hsieh
-// Both are covered by a MIT-style License
+/*
+ * This source file is part of the bstring string library.  This code was
+ * written by Paul Hsieh in 2002-2010, and is covered by either the 3-clause 
+ * BSD open source license or GPL v2.0. Refer to the accompanying documentation 
+ * for details on usage and license.
+ */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include "glsw.h"
+/*
+ * bstrlib.c
+ *
+ * This file is the core module for implementing the bstring functions.
+ */
 
-#ifdef WIN32
-#pragma warning(disable:4996) // allow "fopen"
+#if defined (_MSC_VER)
+/* These warnings from MSVC++ are totally pointless. */
+# define _CRT_SECURE_NO_WARNINGS
 #endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include <stdarg.h>
-#include <string.h>
-#include <limits.h>
-#include <ctype.h>
-
-#if !defined (BSTRLIB_VSNP_OK) && !defined (BSTRLIB_NOVSNP)
-# if defined (__TURBOC__) && !defined (__BORLANDC__)
-#  define BSTRLIB_NOVSNP
-# endif
-#endif
-
-#define BSTR_ERR (-1)
-#define BSTR_OK (0)
-#define BSTR_BS_BUFF_LENGTH_GET (0)
-
-typedef struct tagbstring * bstring;
-typedef const struct tagbstring * const_bstring;
-
-/* Copy functions */
-#define cstr2bstr bfromcstr
-extern bstring bfromcstr (const char * str);
-extern bstring bfromcstralloc (int mlen, const char * str);
-extern bstring blk2bstr (const void * blk, int len);
-extern char * bstr2cstr (const_bstring s, char z);
-extern int bcstrfree (char * s);
-extern bstring bstrcpy (const_bstring b1);
-extern int bassign (bstring a, const_bstring b);
-extern int bassignmidstr (bstring a, const_bstring b, int left, int len);
-extern int bassigncstr (bstring a, const char * str);
-extern int bassignblk (bstring a, const void * s, int len);
-
-/* Destroy function */
-extern int bdestroy (bstring b);
-
-/* Space allocation hinting functions */
-extern int balloc (bstring s, int len);
-extern int ballocmin (bstring b, int len);
-
-/* Substring extraction */
-extern bstring bmidstr (const_bstring b, int left, int len);
-
-/* Various standard manipulations */
-extern int bconcat (bstring b0, const_bstring b1);
-extern int bconchar (bstring b0, char c);
-extern int bcatcstr (bstring b, const char * s);
-extern int bcatblk (bstring b, const void * s, int len);
-extern int binsert (bstring s1, int pos, const_bstring s2, unsigned char fill);
-extern int binsertch (bstring s1, int pos, int len, unsigned char fill);
-extern int breplace (bstring b1, int pos, int len, const_bstring b2, unsigned char fill);
-extern int bdelete (bstring s1, int pos, int len);
-extern int bsetstr (bstring b0, int pos, const_bstring b1, unsigned char fill);
-extern int btrunc (bstring b, int n);
-
-/* Scan/search functions */
-extern int bstricmp (const_bstring b0, const_bstring b1);
-extern int bstrnicmp (const_bstring b0, const_bstring b1, int n);
-extern int biseqcaseless (const_bstring b0, const_bstring b1);
-extern int bisstemeqcaselessblk (const_bstring b0, const void * blk, int len);
-extern int biseq (const_bstring b0, const_bstring b1);
-extern int bisstemeqblk (const_bstring b0, const void * blk, int len);
-extern int biseqcstr (const_bstring b, const char * s);
-extern int biseqcstrcaseless (const_bstring b, const char * s);
-extern int bstrcmp (const_bstring b0, const_bstring b1);
-extern int bstrncmp (const_bstring b0, const_bstring b1, int n);
-extern int binstr (const_bstring s1, int pos, const_bstring s2);
-extern int binstrr (const_bstring s1, int pos, const_bstring s2);
-extern int binstrcaseless (const_bstring s1, int pos, const_bstring s2);
-extern int binstrrcaseless (const_bstring s1, int pos, const_bstring s2);
-extern int bstrchrp (const_bstring b, int c, int pos);
-extern int bstrrchrp (const_bstring b, int c, int pos);
-#define bstrchr(b,c) bstrchrp ((b), (c), 0)
-#define bstrrchr(b,c) bstrrchrp ((b), (c), blength(b)-1)
-extern int binchr (const_bstring b0, int pos, const_bstring b1);
-extern int binchrr (const_bstring b0, int pos, const_bstring b1);
-extern int bninchr (const_bstring b0, int pos, const_bstring b1);
-extern int bninchrr (const_bstring b0, int pos, const_bstring b1);
-extern int bfindreplace (bstring b, const_bstring find, const_bstring repl, int pos);
-extern int bfindreplacecaseless (bstring b, const_bstring find, const_bstring repl, int pos);
-
-/* List of string container functions */
-struct bstrList {
-    int qty, mlen;
-    bstring * entry;
-};
-extern struct bstrList * bstrListCreate (void);
-extern int bstrListDestroy (struct bstrList * sl);
-extern int bstrListAlloc (struct bstrList * sl, int msz);
-extern int bstrListAllocMin (struct bstrList * sl, int msz);
-
-/* String split and join functions */
-extern struct bstrList * bsplit (const_bstring str, unsigned char splitChar);
-extern struct bstrList * bsplits (const_bstring str, const_bstring splitStr);
-extern struct bstrList * bsplitstr (const_bstring str, const_bstring splitStr);
-extern bstring bjoin (const struct bstrList * bl, const_bstring sep);
-extern int bsplitcb (const_bstring str, unsigned char splitChar, int pos,
-	int (* cb) (void * parm, int ofs, int len), void * parm);
-extern int bsplitscb (const_bstring str, const_bstring splitStr, int pos,
-	int (* cb) (void * parm, int ofs, int len), void * parm);
-extern int bsplitstrcb (const_bstring str, const_bstring splitStr, int pos,
-	int (* cb) (void * parm, int ofs, int len), void * parm);
-
-/* Miscellaneous functions */
-extern int bpattern (bstring b, int len);
-extern int btoupper (bstring b);
-extern int btolower (bstring b);
-extern int bltrimws (bstring b);
-extern int brtrimws (bstring b);
-extern int btrimws (bstring b);
-
-#if !defined (BSTRLIB_NOVSNP)
-extern bstring bformat (const char * fmt, ...);
-extern int bformata (bstring b, const char * fmt, ...);
-extern int bassignformat (bstring b, const char * fmt, ...);
-extern int bvcformata (bstring b, int count, const char * fmt, va_list arglist);
-
-#define bvformata(ret, b, fmt, lastarg) { \
-bstring bstrtmp_b = (b); \
-const char * bstrtmp_fmt = (fmt); \
-int bstrtmp_r = BSTR_ERR, bstrtmp_sz = 16; \
-	for (;;) { \
-		va_list bstrtmp_arglist; \
-		va_start (bstrtmp_arglist, lastarg); \
-		bstrtmp_r = bvcformata (bstrtmp_b, bstrtmp_sz, bstrtmp_fmt, bstrtmp_arglist); \
-		va_end (bstrtmp_arglist); \
-		if (bstrtmp_r >= 0) { /* Everything went ok */ \
-			bstrtmp_r = BSTR_OK; \
-			break; \
-		} else if (-bstrtmp_r <= bstrtmp_sz) { /* A real error? */ \
-			bstrtmp_r = BSTR_ERR; \
-			break; \
-		} \
-		bstrtmp_sz = -bstrtmp_r; /* Doubled or target size */ \
-	} \
-	ret = bstrtmp_r; \
-}
-
-#endif
-
-typedef int (*bNgetc) (void *parm);
-typedef size_t (* bNread) (void *buff, size_t elsize, size_t nelem, void *parm);
-
-/* Input functions */
-extern bstring bgets (bNgetc getcPtr, void * parm, char terminator);
-extern bstring bread (bNread readPtr, void * parm);
-extern int bgetsa (bstring b, bNgetc getcPtr, void * parm, char terminator);
-extern int bassigngets (bstring b, bNgetc getcPtr, void * parm, char terminator);
-extern int breada (bstring b, bNread readPtr, void * parm);
-
-/* Stream functions */
-extern struct bStream * bsopen (bNread readPtr, void * parm);
-extern void * bsclose (struct bStream * s);
-extern int bsbufflength (struct bStream * s, int sz);
-extern int bsreadln (bstring b, struct bStream * s, char terminator);
-extern int bsreadlns (bstring r, struct bStream * s, const_bstring term);
-extern int bsread (bstring b, struct bStream * s, int n);
-extern int bsreadlna (bstring b, struct bStream * s, char terminator);
-extern int bsreadlnsa (bstring r, struct bStream * s, const_bstring term);
-extern int bsreada (bstring b, struct bStream * s, int n);
-extern int bsunread (struct bStream * s, const_bstring b);
-extern int bspeek (bstring r, const struct bStream * s);
-extern int bssplitscb (struct bStream * s, const_bstring splitStr, 
-	int (* cb) (void * parm, int ofs, const_bstring entry), void * parm);
-extern int bssplitstrcb (struct bStream * s, const_bstring splitStr, 
-	int (* cb) (void * parm, int ofs, const_bstring entry), void * parm);
-extern int bseof (const struct bStream * s);
-
-struct tagbstring {
-	int mlen;
-	int slen;
-	unsigned char * data;
-};
-
-/* Accessor macros */
-#define blengthe(b, e)      (((b) == (void *)0 || (b)->slen < 0) ? (int)(e) : ((b)->slen))
-#define blength(b)          (blengthe ((b), 0))
-#define bdataofse(b, o, e)  (((b) == (void *)0 || (b)->data == (void*)0) ? (char *)(e) : ((char *)(b)->data) + (o))
-#define bdataofs(b, o)      (bdataofse ((b), (o), (void *)0))
-#define bdatae(b, e)        (bdataofse (b, 0, e))
-#define bdata(b)            (bdataofs (b, 0))
-#define bchare(b, p, e)     ((((unsigned)(p)) < (unsigned)blength(b)) ? ((b)->data[(p)]) : (e))
-#define bchar(b, p)         bchare ((b), (p), '\0')
-
-/* Static constant string initialization macro */
-#define bsStaticMlen(q,m)   {(m), (int) sizeof(q)-1, (unsigned char *) ("" q "")}
-#if defined(_MSC_VER)
-# define bsStatic(q)        bsStaticMlen(q,-32)
-#endif
-#ifndef bsStatic
-# define bsStatic(q)        bsStaticMlen(q,-__LINE__)
-#endif
-
-/* Static constant block parameter pair */
-#define bsStaticBlkParms(q) ((void *)("" q "")), ((int) sizeof(q)-1)
-
-/* Reference building macros */
-#define cstr2tbstr btfromcstr
-#define btfromcstr(t,s) {                                            \
-    (t).data = (unsigned char *) (s);                                \
-    (t).slen = ((t).data) ? ((int) (strlen) ((char *)(t).data)) : 0; \
-    (t).mlen = -1;                                                   \
-}
-#define blk2tbstr(t,s,l) {            \
-    (t).data = (unsigned char *) (s); \
-    (t).slen = l;                     \
-    (t).mlen = -1;                    \
-}
-#define btfromblk(t,s,l) blk2tbstr(t,s,l)
-#define bmid2tbstr(t,b,p,l) {                                                \
-    const_bstring bstrtmp_s = (b);                                           \
-    if (bstrtmp_s && bstrtmp_s->data && bstrtmp_s->slen >= 0) {              \
-        int bstrtmp_left = (p);                                              \
-        int bstrtmp_len  = (l);                                              \
-        if (bstrtmp_left < 0) {                                              \
-            bstrtmp_len += bstrtmp_left;                                     \
-            bstrtmp_left = 0;                                                \
-        }                                                                    \
-        if (bstrtmp_len > bstrtmp_s->slen - bstrtmp_left)                    \
-            bstrtmp_len = bstrtmp_s->slen - bstrtmp_left;                    \
-        if (bstrtmp_len <= 0) {                                              \
-            (t).data = (unsigned char *)"";                                  \
-            (t).slen = 0;                                                    \
-        } else {                                                             \
-            (t).data = bstrtmp_s->data + bstrtmp_left;                       \
-            (t).slen = bstrtmp_len;                                          \
-        }                                                                    \
-    } else {                                                                 \
-        (t).data = (unsigned char *)"";                                      \
-        (t).slen = 0;                                                        \
-    }                                                                        \
-    (t).mlen = -__LINE__;                                                    \
-}
-#define btfromblkltrimws(t,s,l) {                                            \
-    int bstrtmp_idx = 0, bstrtmp_len = (l);                                  \
-    unsigned char * bstrtmp_s = (s);                                         \
-    if (bstrtmp_s && bstrtmp_len >= 0) {                                     \
-        for (; bstrtmp_idx < bstrtmp_len; bstrtmp_idx++) {                   \
-            if (!isspace (bstrtmp_s[bstrtmp_idx])) break;                    \
-        }                                                                    \
-    }                                                                        \
-    (t).data = bstrtmp_s + bstrtmp_idx;                                      \
-    (t).slen = bstrtmp_len - bstrtmp_idx;                                    \
-    (t).mlen = -__LINE__;                                                    \
-}
-#define btfromblkrtrimws(t,s,l) {                                            \
-    int bstrtmp_len = (l) - 1;                                               \
-    unsigned char * bstrtmp_s = (s);                                         \
-    if (bstrtmp_s && bstrtmp_len >= 0) {                                     \
-        for (; bstrtmp_len >= 0; bstrtmp_len--) {                            \
-            if (!isspace (bstrtmp_s[bstrtmp_len])) break;                    \
-        }                                                                    \
-    }                                                                        \
-    (t).data = bstrtmp_s;                                                    \
-    (t).slen = bstrtmp_len + 1;                                              \
-    (t).mlen = -__LINE__;                                                    \
-}
-#define btfromblktrimws(t,s,l) {                                             \
-    int bstrtmp_idx = 0, bstrtmp_len = (l) - 1;                              \
-    unsigned char * bstrtmp_s = (s);                                         \
-    if (bstrtmp_s && bstrtmp_len >= 0) {                                     \
-        for (; bstrtmp_idx <= bstrtmp_len; bstrtmp_idx++) {                  \
-            if (!isspace (bstrtmp_s[bstrtmp_idx])) break;                    \
-        }                                                                    \
-        for (; bstrtmp_len >= bstrtmp_idx; bstrtmp_len--) {                  \
-            if (!isspace (bstrtmp_s[bstrtmp_len])) break;                    \
-        }                                                                    \
-    }                                                                        \
-    (t).data = bstrtmp_s + bstrtmp_idx;                                      \
-    (t).slen = bstrtmp_len + 1 - bstrtmp_idx;                                \
-    (t).mlen = -__LINE__;                                                    \
-}
-
-/* Write protection macros */
-#define bwriteprotect(t)     { if ((t).mlen >=  0) (t).mlen = -1; }
-#define bwriteallow(t)       { if ((t).mlen == -1) (t).mlen = (t).slen + ((t).slen == 0); }
-#define biswriteprotected(t) ((t).mlen <= 0)
-
-#ifdef __cplusplus
-}
-#endif
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-typedef struct glswListRec
-{
-    bstring Key;
-    bstring Value;
-    struct glswListRec* Next;
-} glswList;
-
-typedef struct glswContextRec
-{
-    bstring ErrorMessage;
-    glswList* TokenMap;
-    glswList* ShaderMap;
-    glswList* LoadedEffects;
-    glswList* PathList;
-} glswContext;
-
-///////////////////////////////////////////////////////////////////////////////
-// PRIVATE GLOBALS
-
-static glswContext* __glsw__Context = 0;
-
-///////////////////////////////////////////////////////////////////////////////
-// PRIVATE FUNCTIONS
-
-static int __glsw__Alphanumeric(char c)
-{
-    return
-        (c >= 'A' && c <= 'Z') ||
-        (c >= 'a' && c <= 'z') ||
-        (c >= '0' && c <= '9') ||
-        c == '_' || c == '.';
-}
-
-static void __glsw__FreeList(glswList* pNode)
-{
-    while (pNode)
-    {
-        glswList* pNext = pNode->Next;
-        bdestroy(pNode->Key);
-        bdestroy(pNode->Value);
-        free(pNode);
-        pNode = pNext;
-    }
-}
-
-static bstring __glsw__LoadEffectContents(glswContext* gc, bstring effectName)
-{
-    FILE* fp = 0;
-    bstring effectFile, effectContents;
-    glswList* pPathList = gc->PathList;
-    
-    while (pPathList)
-    {
-        effectFile = bstrcpy(effectName);
-        binsert(effectFile, 0, pPathList->Key, '?');
-        bconcat(effectFile, pPathList->Value);
-
-        fp = fopen((const char*) effectFile->data, "rb");
-        if (fp)
-        {
-            break;
-        }
-            
-        pPathList = pPathList->Next;
-    }
-
-    if (!fp)
-    {
-        bdestroy(gc->ErrorMessage);
-        gc->ErrorMessage = bformat("Unable to open effect file '%s'.", effectFile->data);
-        bdestroy(effectFile);
-        return 0;
-    }
-    
-    // Add a new entry to the front of gc->LoadedEffects
-    {
-        glswList* temp = gc->LoadedEffects;
-        gc->LoadedEffects = (glswList*) calloc(sizeof(glswList), 1);
-        gc->LoadedEffects->Key = bstrcpy(effectName);
-        gc->LoadedEffects->Next = temp;
-    }
-    
-    // Read in the effect file
-    effectContents = bread((bNread) fread, fp);
-    fclose(fp);
-    bdestroy(effectFile);
-    return effectContents;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// PUBLIC FUNCTIONS
-
-int glswInit()
-{
-    if (__glsw__Context)
-    {
-        bdestroy(__glsw__Context->ErrorMessage);
-        __glsw__Context->ErrorMessage = bfromcstr("Already initialized.");
-        return 0;
-    }
-
-    __glsw__Context = (glswContext*) calloc(sizeof(glswContext), 1);
-    
-    glswAddPath("", "");
-
-    return 1;
-}
-
-int glswShutdown()
-{
-    glswContext* gc = __glsw__Context;
-
-    if (!gc)
-    {
-        return 0;
-    }
-
-    bdestroy(gc->ErrorMessage);
-
-    __glsw__FreeList(gc->TokenMap);
-    __glsw__FreeList(gc->ShaderMap);
-    __glsw__FreeList(gc->LoadedEffects);
-    __glsw__FreeList(gc->PathList);
-
-    free(gc);
-    __glsw__Context = 0;
-
-    return 1;
-}
-
-int glswAddPath(const char* pathPrefix, const char* pathSuffix)
-{
-    glswContext* gc = __glsw__Context;
-    glswList* temp;
-
-    if (!gc)
-    {
-        return 0;
-    }
-
-    temp = gc->PathList;
-    gc->PathList = (glswList*) calloc(sizeof(glswList), 1);
-    gc->PathList->Key = bfromcstr(pathPrefix);
-    gc->PathList->Value = bfromcstr(pathSuffix);
-    gc->PathList->Next = temp;
-
-    return 1;
-}
-
-const char* glswGetShader(const char* pEffectKey)
-{
-    glswContext* gc = __glsw__Context;
-    bstring effectKey;
-    glswList* closestMatch = 0;
-    struct bstrList* tokens;
-    bstring effectName;
-    glswList* pLoadedEffect;
-    glswList* pShaderEntry;
-    bstring shaderKey = 0;
-
-    if (!gc)
-    {
-        return 0;
-    }
-
-    // Extract the effect name from the effect key
-    effectKey = bfromcstr(pEffectKey);
-    tokens = bsplit(effectKey, '.');
-    if (!tokens || !tokens->qty)
-    {
-        bdestroy(gc->ErrorMessage);
-        gc->ErrorMessage = bformat("Malformed effect key key '%s'.", pEffectKey);
-        bstrListDestroy(tokens);
-        bdestroy(effectKey);
-        return 0;
-    }
-    effectName = tokens->entry[0];
-
-    // Check if we already loaded this effect file
-    pLoadedEffect = gc->LoadedEffects;
-    while (pLoadedEffect)
-    {
-        if (1 == biseq(pLoadedEffect->Key, effectName))
-        {
-            break;
-        }
-        pLoadedEffect = pLoadedEffect->Next;
-    }
-
-    // If we haven't loaded this file yet, load it in
-    if (!pLoadedEffect)
-    {
-        bstring effectContents = __glsw__LoadEffectContents(gc, effectName);
-        struct bstrList* lines = bsplit(effectContents, '\n');
-        int lineNo;
-
-        bdestroy(effectContents);
-        effectContents = 0;
-
-        for (lineNo = 0; lines && lineNo < lines->qty; lineNo++)
-        {
-            bstring line = lines->entry[lineNo];
-
-            // If the line starts with "--", then it marks a new section
-            if (blength(line) >= 2 && line->data[0] == '-' && line->data[1] == '-')
-            {
-                // Find the first character in [A-Za-z0-9_].
-                int colNo;
-                for (colNo = 2; colNo < blength(line); colNo++)
-                {
-                    char c = line->data[colNo];
-                    if (__glsw__Alphanumeric(c))
-                    {
-                        break;
-                    }
-                }
-
-                // If there's no alphanumeric character,
-                // then this marks the start of a new comment block.
-                if (colNo >= blength(line))
-                {
-                    bdestroy(shaderKey);
-                    shaderKey = 0;
-                }
-                else
-                {
-                    // Keep reading until a non-alphanumeric character is found.
-                    int endCol;
-                    for (endCol = colNo; endCol < blength(line); endCol++)
-                    {
-                        char c = line->data[endCol];
-                        if (!__glsw__Alphanumeric(c))
-                        {
-                            break;
-                        }
-                    }
-
-                    bdestroy(shaderKey);
-                    shaderKey = bmidstr(line, colNo, endCol - colNo);
-
-                    // Add a new entry to the shader map.
-                    {
-                        glswList* temp = gc->ShaderMap;
-                        gc->ShaderMap = (glswList*) calloc(sizeof(glswList), 1);
-                        gc->ShaderMap->Key = bstrcpy(shaderKey);
-                        gc->ShaderMap->Next = temp;
-                        gc->ShaderMap->Value = bformat("#line %d\n", lineNo);
-
-                        binsertch(gc->ShaderMap->Key, 0, 1, '.');
-                        binsert(gc->ShaderMap->Key, 0, effectName, '?');
-                    }
-
-                    // Check for a version mapping.
-                    if (gc->TokenMap)
-                    {
-                        struct bstrList* tokens = bsplit(shaderKey, '.');
-                        glswList* pTokenMapping = gc->TokenMap;
-
-                        while (pTokenMapping)
-                        {
-                            bstring directive = 0;
-                            int tokenIndex;
-
-                            // An empty key in the token mapping means "always prepend this directive".
-                            // The effect name itself is also checked against the token mapping.
-                            if (0 == blength(pTokenMapping->Key) ||
-                                (1 == blength(pTokenMapping->Key) && '*' == bchar(pTokenMapping->Key, 0)) ||
-                                1 == biseq(pTokenMapping->Key, effectName))
-                            {
-                                directive = pTokenMapping->Value;
-                                binsert(gc->ShaderMap->Value, 0, directive, '?');
-                            }
-
-                            // Check all tokens in the current section divider for a mapped token.
-                            for (tokenIndex = 0; tokenIndex < tokens->qty && !directive; tokenIndex++)
-                            {
-                                bstring token = tokens->entry[tokenIndex];
-                                if (1 == biseq(pTokenMapping->Key, token))
-                                {
-                                    directive = pTokenMapping->Value;
-                                    binsert(gc->ShaderMap->Value, 0, directive, '?');
-                                }
-                            }
-
-                            pTokenMapping = pTokenMapping->Next;
-                        }
-
-                        bstrListDestroy(tokens);
-                    }
-                }
-
-                continue;
-            }
-            if (shaderKey)
-            {
-                bconcat(gc->ShaderMap->Value, line);
-                bconchar(gc->ShaderMap->Value, '\n');
-            }
-        }
-
-        // Cleanup
-        bstrListDestroy(lines);
-        bdestroy(shaderKey);
-    }
-
-    // Find the longest matching shader key
-    pShaderEntry = gc->ShaderMap;
-
-    while (pShaderEntry)
-    {
-        if (binstr(effectKey, 0, pShaderEntry->Key) == 0 &&
-            (!closestMatch || blength(pShaderEntry->Key) > blength(closestMatch->Key)))
-        {
-            closestMatch = pShaderEntry;
-        }
-
-        pShaderEntry = pShaderEntry->Next;
-    }
-
-    bstrListDestroy(tokens);
-    bdestroy(effectKey);
-
-    if (!closestMatch)
-    {
-        bdestroy(gc->ErrorMessage);
-        gc->ErrorMessage = bformat("Could not find shader with key '%s'.", pEffectKey);
-        return 0;
-    }
-
-    return (const char*) closestMatch->Value->data;
-}
-
-const char* glswGetError()
-{
-    glswContext* gc = __glsw__Context;
-
-    if (!gc)
-    {
-        return "The glsw API has not been initialized.";
-    }
-
-    return (const char*) (gc->ErrorMessage ? gc->ErrorMessage->data : 0);
-}
-
-int glswAddDirective(const char* token, const char* directive)
-{
-    glswContext* gc = __glsw__Context;
-    glswList* temp;
-
-    if (!gc)
-    {
-        return 0;
-    }
-
-    temp = gc->TokenMap;
-    gc->TokenMap = (glswList*) calloc(sizeof(glswList), 1);
-    gc->TokenMap->Key = bfromcstr(token);
-    gc->TokenMap->Value = bfromcstr(directive);
-    gc->TokenMap->Next = temp;
-
-    bconchar(gc->TokenMap->Value, '\n');
-
-    return 1;
-}
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 #include <stdio.h>
 #include <stddef.h>
@@ -689,6 +22,7 @@ int glswAddDirective(const char* token, const char* directive)
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include "bstrlib.h"
 
 /* Optionally include a mechanism for debugging memory */
 
@@ -2206,19 +1540,21 @@ bstring aux = (bstring) b2;
 	return BSTR_OK;
 }
 
-/*  int bfindreplace (bstring b, const_bstring find, const_bstring repl, 
- *                    int pos)
- *
- *  Replace all occurrences of a find string with a replace string after a
- *  given point in a bstring.
+/*  
+ *  findreplaceengine is used to implement bfindreplace and 
+ *  bfindreplacecaseless. It works by breaking the three cases of
+ *  expansion, reduction and replacement, and solving each of these
+ *  in the most efficient way possible.
  */
 
 typedef int (*instr_fnptr) (const_bstring s1, int pos, const_bstring s2);
 
+#define INITIAL_STATIC_FIND_INDEX_COUNT 32
+
 static int findreplaceengine (bstring b, const_bstring find, const_bstring repl, int pos, instr_fnptr instr) {
 int i, ret, slen, mlen, delta, acc;
 int * d;
-int static_d[32];
+int static_d[INITIAL_STATIC_FIND_INDEX_COUNT+1]; /* This +1 is unnecessary, but it shuts up LINT. */
 ptrdiff_t pd;
 bstring auxf = (bstring) find;
 bstring auxr = (bstring) repl;
@@ -2285,20 +1621,31 @@ bstring auxr = (bstring) repl;
 	}
 
 	/* expanding replacement since find->slen < repl->slen.  Its a lot 
-	   more complicated. */
+	   more complicated.  This works by first finding all the matches and 
+	   storing them to a growable array, then doing at most one resize of
+	   the destination bstring and then performing the direct memory transfers
+	   of the string segment pieces to form the final result. The growable 
+	   array of matches uses a deferred doubling reallocing strategy.  What 
+	   this means is that it starts as a reasonably fixed sized auto array in 
+	   the hopes that many if not most cases will never need to grow this 
+	   array.  But it switches as soon as the bounds of the array will be 
+	   exceeded.  An extra find result is always appended to this array that
+	   corresponds to the end of the destination string, so slen is checked
+	   against mlen - 1 rather than mlen before resizing.
+	*/
 
-	mlen = 32;
-	d = (int *) static_d; /* Avoid malloc for trivial cases */
+	mlen = INITIAL_STATIC_FIND_INDEX_COUNT;
+	d = (int *) static_d; /* Avoid malloc for trivial/initial cases */
 	acc = slen = 0;
 
 	while ((pos = instr (b, pos, auxf)) >= 0) {
-		if (slen + 1 >= mlen) {
-			int sl;
-			int * t;
+		if (slen >= mlen - 1) {
+			int sl, *t;
+
 			mlen += mlen;
 			sl = sizeof (int *) * mlen;
-			if (static_d == d) d = NULL;
-			if (sl < mlen || NULL == (t = (int *) bstr__realloc (d, sl))) {
+			if (static_d == d) d = NULL; /* static_d cannot be realloced */
+			if (mlen <= 0 || sl < mlen || NULL == (t = (int *) bstr__realloc (d, sl))) {
 				ret = BSTR_ERR;
 				goto done;
 			}
@@ -2314,6 +1661,8 @@ bstring auxr = (bstring) repl;
 			goto done;
 		}
 	}
+	
+	/* slen <= INITIAL_STATIC_INDEX_COUNT-1 or mlen-1 here. */
 	d[slen] = b->slen;
 
 	if (BSTR_OK == (ret = balloc (b, b->slen + acc + 1))) {
@@ -2321,13 +1670,13 @@ bstring auxr = (bstring) repl;
 		for (i = slen-1; i >= 0; i--) {
 			int s, l;
 			s = d[i] + auxf->slen;
-			l = d[i+1] - s;
+			l = d[i+1] - s; /* d[slen] may be accessed here. */
 			if (l) {
 				bstr__memmove (b->data + s + acc, b->data + s, l);
 			}
 			if (auxr->slen) {
 				bstr__memmove (b->data + s + acc - auxr->slen, 
-				         auxr->data, auxr->slen);
+				               auxr->data, auxr->slen);
 			}
 			acc += delta;		
 		}
@@ -3410,10 +2759,7 @@ struct genBstrList g;
 #ifdef __GNUC__
 /* Something is making gcc complain about this prototype not being here, so 
    I've just gone ahead and put it in. */
-
-// Modification by philip: commented this out to get it to build on my mac
-//extern int vsnprintf (char *buf, size_t count, const char *format, va_list arg);
-
+extern int vsnprintf (char *buf, size_t count, const char *format, va_list arg);
 #endif
 
 #define exvsnprintf(r,b,n,f,a) {r = vsnprintf (b,n,f,a);}
@@ -3581,14 +2927,14 @@ int n, r;
  *  string fmt and attempts to append the result to b.  The fmt parameter is 
  *  the same as that of the printf function.  The variable argument list is 
  *  replaced with arglist, which has been initialized by the va_start macro.
- *  The size of the output is upper bounded by count.  If the required output
- *  exceeds count, the string b is not augmented with any contents and a value
- *  below BSTR_ERR is returned.  If a value below -count is returned then it
- *  is recommended that the negative of this value be used as an update to the
- *  count in a subsequent pass.  On other errors, such as running out of 
- *  memory, parameter errors or numeric wrap around BSTR_ERR is returned.  
- *  BSTR_OK is returned when the output is successfully generated and 
- *  appended to b.
+ *  The size of the appended output is upper bounded by count.  If the 
+ *  required output exceeds count, the string b is not augmented with any 
+ *  contents and a value below BSTR_ERR is returned.  If a value below -count 
+ *  is returned then it is recommended that the negative of this value be 
+ *  used as an update to the count in a subsequent pass.  On other errors, 
+ *  such as running out of memory, parameter errors or numeric wrap around 
+ *  BSTR_ERR is returned.  BSTR_OK is returned when the output is successfully 
+ *  generated and appended to b.
  *
  *  Note: There is no sanity checking of arglist, and this function is
  *  destructive of the contents of b from the b->slen point onward.  If there 
@@ -3607,22 +2953,27 @@ int n, r, l;
 	exvsnprintf (r, (char *) b->data + b->slen, count + 2, fmt, arg);
 
 	/* Did the operation complete successfully within bounds? */
-
-	if (n >= (l = b->slen + (int) (strlen) ((const char *) b->data + b->slen))) {
-		b->slen = l;
-		return BSTR_OK;
+	for (l = b->slen; l <= n; l++) {
+		if ('\0' == b->data[l]) {
+			b->slen = l;
+			return BSTR_OK;
+		}
 	}
 
 	/* Abort, since the buffer was not large enough.  The return value 
 	   tries to help set what the retry length should be. */
 
 	b->data[b->slen] = '\0';
-	if (r > count+1) l = r; else {
-		l = count+count;
-		if (count > l) l = INT_MAX;
+	if (r > count + 1) {	/* Does r specify a particular target length? */
+		n = r;
+	} else {
+		n = count + count;	/* If not, just double the size of count */
+		if (count > n) n = INT_MAX;
 	}
-	n = -l;
+	n = -n;
+
 	if (n > BSTR_ERR-1) n = BSTR_ERR-1;
 	return n;
 }
+
 #endif

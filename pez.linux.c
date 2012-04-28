@@ -157,9 +157,7 @@ int main(int argc, char** argv)
 
     // Lop off the trailing .c
     bstring name = bfromcstr(PezGetConfig().Title);
-    bstring shaderPrefix = bmidstr(name, 0, blength(name) - 1);
-    pezSwInit(bdata(shaderPrefix));
-    bdestroy(shaderPrefix);
+    pezSwInit("");
 
     // Set up the Shader Wrangler
     pezSwAddPath("./", ".glsl");
