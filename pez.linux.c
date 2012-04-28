@@ -137,7 +137,7 @@ int main(int argc, char** argv)
         }
         int attribs[] = {
             GLX_CONTEXT_MAJOR_VERSION_ARB, 4,
-            GLX_CONTEXT_MINOR_VERSION_ARB, 0,
+            GLX_CONTEXT_MINOR_VERSION_ARB, 2,
             GLX_CONTEXT_FLAGS_ARB, GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
             0
         };
