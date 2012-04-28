@@ -5,6 +5,9 @@
 using namespace vmath;
 using std::string;
 
+#define OpenGLError GL_NO_ERROR == glGetError(),                        \
+        "%s:%d - OpenGL Error - %s", __FILE__, __LINE__, __FUNCTION__   \
+
 static struct {
     SlabPod Velocity;
     SlabPod Density;
@@ -88,10 +91,13 @@ void PezInitialize()
     glEnable(GL_CULL_FACE);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnableVertexAttribArray(SlotPosition);
+
+    pezCheck(OpenGLError);
 }
 
 void PezRender()
 {
+    pezCheck(OpenGLError);
     PezConfig cfg = PezGetConfig();
 
     // Blur and brighten the density map:
@@ -109,6 +115,7 @@ void PezRender()
         SetUniform("InverseSize", recipPerElem(Vector3(float(GridWidth), float(GridHeight), float(GridDepth))));
         glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, GridDepth);
     }
+    pezCheck(OpenGLError);
 
     // Generate the light cache:
     bool CacheLights = true;
@@ -156,10 +163,13 @@ void PezRender()
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_3D, 0);
     glActiveTexture(GL_TEXTURE0);
+
+    pezCheck(OpenGLError);
 }
 
 void PezUpdate(float seconds)
 {
+    pezCheck(OpenGLError);
     PezConfig cfg = PezGetConfig();
 
     float dt = seconds * 0.001f;
@@ -205,6 +215,7 @@ void PezUpdate(float seconds)
         SubtractGradient(Slabs.Velocity.Ping, Slabs.Pressure.Ping, Surfaces.Obstacles, Slabs.Velocity.Pong);
         SwapSurfaces(&Slabs.Velocity);
     }
+    pezCheck(OpenGLError);
 }
 
 void PezHandleMouse(int x, int y, int action)
@@ -226,5 +237,4 @@ void PezHandleMouse(int x, int y, int action)
 void PezHandleKey(char c)
 {
     SimulateFluid = !SimulateFluid;
-    //WriteToFile("Density96.dat", Slabs.Density.Ping);
 }
