@@ -112,7 +112,7 @@ void PezRender()
     PezConfig cfg = PezGetConfig();
 
     // Blur and brighten the density map:
-    bool BlurAndBrighten = false;
+    bool BlurAndBrighten = true;
     if (BlurAndBrighten) {
         glDisable(GL_BLEND);
         glBindFramebuffer(GL_FRAMEBUFFER, Surfaces.BlurredDensity.FboHandle);
@@ -128,7 +128,7 @@ void PezRender()
     pezCheck(OpenGLError);
 
     // Generate the light cache:
-    bool CacheLights = false;
+    bool CacheLights = true;
     if (CacheLights) {
         glDisable(GL_BLEND);
         glBindFramebuffer(GL_FRAMEBUFFER, Surfaces.LightCache.FboHandle);
@@ -150,8 +150,10 @@ void PezRender()
     glEnable(GL_BLEND);
     glBindVertexArray(Vaos.CubeCenter);
     glActiveTexture(GL_TEXTURE0);
-    //glBindTexture(GL_TEXTURE_3D, Surfaces.BlurredDensity.ColorTexture);
-    /**/glBindTexture(GL_TEXTURE_3D, Slabs.Density.Ping.ColorTexture);
+    if (BlurAndBrighten)
+        glBindTexture(GL_TEXTURE_3D, Surfaces.BlurredDensity.ColorTexture);
+    else
+        glBindTexture(GL_TEXTURE_3D, Slabs.Density.Ping.ColorTexture);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_3D, Surfaces.LightCache.ColorTexture);
     glUseProgram(RaycastProgram);
@@ -201,11 +203,8 @@ void PezUpdate(float seconds)
     else  Fips = fips * alpha + Fips * (1.0f - alpha);
 
     if (SimulateFluid) {
-
         glBindVertexArray(Vaos.FullscreenQuad);
         glViewport(0, 0, GridWidth, GridHeight);
-
-        /*
         Advect(Slabs.Velocity.Ping, Slabs.Velocity.Ping, Surfaces.Obstacles, Slabs.Velocity.Pong, VelocityDissipation);
         SwapSurfaces(&Slabs.Velocity);
         Advect(Slabs.Velocity.Ping, Slabs.Temperature.Ping, Surfaces.Obstacles, Slabs.Temperature.Pong, TemperatureDissipation);
@@ -224,11 +223,6 @@ void PezUpdate(float seconds)
         }
         SubtractGradient(Slabs.Velocity.Ping, Slabs.Pressure.Ping, Surfaces.Obstacles, Slabs.Velocity.Pong);
         SwapSurfaces(&Slabs.Velocity);
-        */
-
-        glBindFramebuffer(GL_FRAMEBUFFER, Slabs.Density.Ping.FboHandle);
-        glClearColor(0.125,1,1,1);
-        glClear(GL_COLOR_BUFFER_BIT);
     }
     pezCheck(OpenGLError);
 }
