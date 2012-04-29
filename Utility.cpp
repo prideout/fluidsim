@@ -22,7 +22,7 @@ const int GridDepth = 96;
 const float SplatRadius = GridWidth / 8.0f;
 const float AmbientTemperature = 0.0f;
 const float ImpulseTemperature = 10.0f;
-const float ImpulseDensity = 1.0f;
+const float ImpulseDensity = 1.25f;
 const int NumJacobiIterations = 40;
 const float TimeStep = 0.25f;
 const float SmokeBuoyancy = 1.0f;
@@ -30,7 +30,7 @@ const float SmokeWeight = 0.0;
 const float GradientScale = 1.125f / CellSize;
 const float TemperatureDissipation = 0.99f;
 const float VelocityDissipation = 0.99f;
-const float DensityDissipation = 0.99f;
+const float DensityDissipation = 0.999f;
 const Vector3 ImpulsePosition( GridWidth / 2.0f, GridHeight - (int) SplatRadius / 2.0f, GridDepth / 2.0f);
 
 void CreateObstacles(SurfacePod dest)

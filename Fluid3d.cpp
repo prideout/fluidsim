@@ -54,8 +54,8 @@ PezConfig PezGetConfig()
 {
     PezConfig config;
     config.Title = "Fluid3d";
-    config.Width = 853;
-    config.Height = 480;
+    config.Width = 853*2;
+    config.Height = 480*2;
     config.Multisampling = 0;
     config.VerticalSync = 0;
     return config;
