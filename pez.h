@@ -33,6 +33,8 @@ void PezUpdate(float seconds);
 void PezHandleMouse(int x, int y, int action);
 #endif
 
+void PezHandleKey(char c);
+
 #ifdef PEZ_DROP_HANDLER
 void PezReceiveDrop(const char* filename);
 #endif
