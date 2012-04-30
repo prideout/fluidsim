@@ -16,9 +16,9 @@ static struct {
 } Programs;
 
 const float CellSize = 1.25f;
-const int GridWidth = 128;
-const int GridHeight = 128;
-const int GridDepth = 128;
+const int GridWidth = 64;
+const int GridHeight = 64;
+const int GridDepth = 64;
 const float SplatRadius = GridWidth / 8.0f;
 const float AmbientTemperature = 0.0f;
 const float ImpulseTemperature = 10.0f;
