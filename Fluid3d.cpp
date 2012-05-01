@@ -18,7 +18,6 @@ static struct {
 static struct {
     SurfacePod Divergence;
     SurfacePod Obstacles;
-    SurfacePod HiresObstacles;
     SurfacePod LightCache;
     SurfacePod BlurredDensity;
 } Surfaces;
@@ -38,7 +37,6 @@ static struct {
 static const Point3 EyePosition = Point3(0, 0, 2);
 static GLuint RaycastProgram;
 static GLuint LightProgram;
-static GLuint TextProgram;
 static GLuint BlurProgram;
 static float FieldOfView = 0.7f;
 static bool SimulateFluid = true;
@@ -68,7 +66,6 @@ void PezInitialize()
     RaycastProgram = LoadProgram("Raycast.VS", "Raycast.GS", "Raycast.FS");
     LightProgram = LoadProgram("Fluid.Vertex", "Fluid.PickLayer", "Light.Cache");
     BlurProgram = LoadProgram("Fluid.Vertex", "Fluid.PickLayer", "Light.Blur");
-    TextProgram = LoadProgram("Text.VS", "Text.GS", "Text.FS");
 
     glGenVertexArrays(1, &Vaos.CubeCenter);
     glBindVertexArray(Vaos.CubeCenter);
@@ -92,13 +89,9 @@ void PezInitialize()
     Surfaces.LightCache = CreateVolume(GridWidth, GridHeight, GridDepth, 1);
     Surfaces.BlurredDensity = CreateVolume(GridWidth, GridHeight, GridDepth, 1);
     InitSlabOps();
-    Surfaces.Obstacles = CreateVolume(GridWidth, GridHeight, GridDepth, 3);
     CreateObstacles(Surfaces.Obstacles);
     ClearSurface(Slabs.Temperature.Ping, AmbientTemperature);
-    /*
-    if (!SimulateFluid)
-        ReadFromFile("Smoke96.dat", Slabs.Density.Ping);
-    */
+
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -246,5 +239,7 @@ void PezHandleMouse(int x, int y, int action)
 
 void PezHandleKey(char c)
 {
-    SimulateFluid = !SimulateFluid;
+    if (c == ' ') {
+        SimulateFluid = !SimulateFluid;
+    }
 }
