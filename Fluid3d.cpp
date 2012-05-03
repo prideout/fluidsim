@@ -89,6 +89,7 @@ void PezInitialize()
     Surfaces.LightCache = CreateVolume(GridWidth, GridHeight, GridDepth, 1);
     Surfaces.BlurredDensity = CreateVolume(GridWidth, GridHeight, GridDepth, 1);
     InitSlabOps();
+    Surfaces.Obstacles = CreateVolume(GridWidth, GridHeight, GridDepth, 3);
     CreateObstacles(Surfaces.Obstacles);
     ClearSurface(Slabs.Temperature.Ping, AmbientTemperature);
 

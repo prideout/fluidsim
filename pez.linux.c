@@ -166,7 +166,7 @@ int main(int argc, char** argv)
     strcpy(qualifiedPath, pezResourcePath());
     strcat(qualifiedPath, "/");
     pezSwAddPath(qualifiedPath, ".glsl");
-    pezSwAddDirective("*", "#version 410");
+    pezSwAddDirective("*", "#version 400");
 
     // Perform user-specified intialization
     pezPrintString("OpenGL Version: %s\n", glGetString(GL_VERSION));
